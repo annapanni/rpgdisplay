@@ -1,5 +1,6 @@
 import math
 from itertools import tee, count
+from pygame.math import Vector2
 
 def iter_edges(poligons):
     """ iterate over all edges of poligons (list of (x,y) points) """
@@ -64,7 +65,7 @@ def clip(rect, edgelist):
     return filter(None,map(clip_edge, edgelist))
 
 
-def shadows(polygons, viewpoint, maxrange = None, direction=ccw):
+def shadows(polygons, viewpoint, maxrange = None, direction=ccw, debug=False):
     """ létrehozza az árnyéktrapézokat
         x2 > x1 kivéve ha "túlfordul" vagyis átlép a 360 fokos határon
         (ez akkor fordul elő ha x1-x2 > pi)
@@ -88,17 +89,16 @@ def shadows(polygons, viewpoint, maxrange = None, direction=ccw):
         maxrange = 500
 
     quads = []
-    debug = []
+    debugdata = []
 
     for p1, p2 in tr_edges:
-        pp1, pp2 = to_polar(p1), to_polar(p2)
-        a1, a2 = pp1[0], pp2[0]
-        
-        debug.append((p1,p2))
-        tdek = (p1, p2, from_polar((a2,maxrange)), from_polar((a1,maxrange)) )
+        v1,v2 = Vector2(p1), Vector2(p2)
+        vm = (v1+v2)/2
+        if debug: debugdata.append((p1,p2))
+        tdek = (v1, v2, v2*(maxrange/v2.length()), vm*(maxrange/vm.length()), v1*(maxrange/v1.length()))
         quads.append(offset(vx,vy)(tdek))
 
-    return (quads, debug)
+    return quads if not debug else (quads,debugdata)
 
 
 if __name__ == "__main__":

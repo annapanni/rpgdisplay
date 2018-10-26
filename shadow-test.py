@@ -4,9 +4,10 @@ import math
 import pygame
 from shadow import *
 from pygame.locals import *
+from pygame.math import Vector2
 import polygons
 
-polygons = polygons.polygons
+polygons = [[Vector2(p) for p in poly] for poly in polygons.polygons]
 
 
 screensize = 800, 800
@@ -58,7 +59,7 @@ while runme:
     ### draw shadows
     shadowmap.fill((0, 0, 0, 0))
 
-    shadowlist, edgelist = shadows(polygons,light,300)
+    shadowlist, edgelist = shadows(polygons,light,300, debug=True)
 
     for s in shadowlist:
         pygame.draw.polygon(shadowmap, (0,0,255,255), s, 0)
