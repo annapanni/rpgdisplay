@@ -5,9 +5,9 @@ import pygame
 from shadow import *
 from pygame.locals import *
 from pygame.math import Vector2
-import polygons
+import state
 
-polygons = [[Vector2(p) for p in poly] for poly in polygons.polygons]
+polygons = [[Vector2(p) for p in poly] for poly in state.polygons]
 
 
 screensize = 800, 800
