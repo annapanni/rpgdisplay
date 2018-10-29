@@ -9,25 +9,6 @@ def iter_edges(poligons):
             yield (pol[i],pol[i+1])
         yield (pol[i+1], pol[0])
 
-def to_polar(point):
-    """
-    polár koordinátákra vált
-    """
-    dx,dy = point
-    a = math.atan(dx/dy) if dy != 0 else math.pi/2 if dx > 0 else -math.pi/2
-    r = math.sqrt(dx*dx + dy*dy)
-    if dy < 0 : a += math.pi 
-    if a < 0 : a += 2*math.pi
-    return (a,r)
-
-def from_polar(ppoint):
-    """polárkoordinátákból x,y koordinátákra vált """
-    a,r = ppoint
-    return (r * math.sin(a), r * math.cos(a)) 
-
-def fok(ppoint):
-    return (ppoint[0]*180/math.pi, ppoint[1])
-
 def cw(edge):
     """ return true if the edge is counter clockwise directed """
     ((x1,y1),(x2,y2)) = edge
@@ -93,10 +74,13 @@ def shadows(polygons, viewpoint, maxrange = None, direction=ccw, debug=False):
 
     for p1, p2 in tr_edges:
         v1,v2 = Vector2(p1), Vector2(p2)
-        vm = (v1+v2)/2
-        if debug: debugdata.append((p1,p2))
-        tdek = (v1, v2, v2*(maxrange/v2.length()), vm*(maxrange/vm.length()), v1*(maxrange/v1.length()))
-        quads.append(offset(vx,vy)(tdek))
+        try:
+            vm = (v1.normalize()+v2.normalize())
+            if debug: debugdata.append((p1,p2))
+            tdek = (v1, v2, v2.normalize()*maxrange, vm.normalize()*maxrange, v1.normalize()*maxrange)
+            quads.append(offset(vx,vy)(tdek))
+        except ValueError:
+            pass
 
     return quads if not debug else (quads,debugdata)
 
