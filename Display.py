@@ -46,7 +46,7 @@ class Sprite():
         self.x+=self.egyseg_x
         self.y+=self.egyseg_y
         self.mozog+=-1
-        if self.mozog==0:
+        if self.mozog<=0:
             self.egyseg_x= self.egyseg_y=0
         w,h=self.kep.get_size()
         screen.blit(self.kep, [self.x-w/2,self.y-h/2])
@@ -128,6 +128,8 @@ while 1:
                             onturn.sight="t"
                         elif onturn.sight=="t":
                             onturn.sight="no"
+                    if event.key==K_k:
+                        lajos=input("hány óra van?")
 ##            Dungeon
             screen.blit(dungeon, [0,0])
             darkness=basedarkness.copy()
