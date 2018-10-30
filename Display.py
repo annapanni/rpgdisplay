@@ -6,6 +6,7 @@ from math import sqrt
 pygame.init()
 
 font = pygame.font.SysFont("comicsansms", 72)
+font_small = pygame.font.SysFont("comicsansms", 24)
 
 size = width, height = (1000,800)
 screen = pygame.display.set_mode(size)
@@ -56,7 +57,7 @@ travis=Sprite("Travis","travis.png", (feet*5,feet*5), (400,300), sight="t")
 lia=Sprite("Lia","lia.png", (feet*5,feet*5), (500,450), 0, 35, "dv")
 gallindram=Sprite("Gallindram","gallindram.png", (feet*5,feet*5), (600,550), sight="dv")
 trench=Sprite("Trench","trench.jpg", (feet*5,feet*5), (100,150), sight="dv")
-characters=[hanne,travis,lia,gallindram,trench]
+characters=[travis,hanne,lia,gallindram,trench]
 dungeon = pygame.transform.scale(pygame.image.load("dungeon2.jpg"), size)
 
 ##sötetseg
@@ -122,6 +123,11 @@ while 1:
                         fal=[]
                         if walls==False:
                             ment_poly(polygons)
+                    if event.key==K_t:
+                        if onturn.sight=="no":
+                            onturn.sight="t"
+                        elif onturn.sight=="t":
+                            onturn.sight="no"
 ##            Dungeon
             screen.blit(dungeon, [0,0])
             darkness=basedarkness.copy()
@@ -142,6 +148,8 @@ while 1:
 ##            Characters + light
             for character in characters:
                 character.rajzolas()
+                text = font_small.render((str(round(character.movebase))), True, (0,0,255))
+                screen.blit(text,(character.x+2*feet, character.y+2*feet))
                 if character.sight=="dv":
                     light=light_dv
                     lightrect=lightrect_dv
