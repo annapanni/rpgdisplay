@@ -71,6 +71,7 @@ lightrect_t=Rect(0,0,60*feet,60*feet)
 light_dv=light(lightrect_dv)
 light_t=light(lightrect_t)
 
+selector = Selector()
 
 clock=pygame.time.Clock()
 ##main loop
@@ -99,11 +100,13 @@ while 1:
                         elif move==True:
                             selected=select(sprites,mx,my)
                             if selected is not None:
+                                selector.go_to(selected.x,selected.y)
                                 move=selected
                         elif move !=False:
                                 move.x=mx
                                 move.y=my
                                 move=False
+                                selector.visible = False
                         elif enemy:
                             enemynumber+=1
                             nmi = Npc(nev="nmi"+str(enemynumber), kep="orc.png", meret='M', pos=(mx,my))
@@ -206,6 +209,7 @@ while 1:
                     else:
                         text = font.render(str(round(maradek)), True, (255,0,0))
                     screen.blit(text,(15,10))
+                selector.rajzolas(screen)
                 pygame.display.flip()
                 clock.tick(30)
     for sprite in sprites:

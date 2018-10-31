@@ -66,7 +66,24 @@ class Player (Character):
         st.update({'sight':self.sight})
         return st
 
-
 class Npc (Character):
     pass
 
+class Selector(Sprite):
+    def __init__(self, kep='selector.png'):
+        k = pygame.image.load(kep).convert_alpha()
+        self.anim = [ pygame.transform.scale(k, (n,n)) for n in range(feet*5,feet*5+32,4) ]
+        self.meret = 'M'
+        self.go_to(0,0)
+        self.counter = self.phase = 0
+        self.visible = True
+    def go_to(self,x,y):
+        self.x, self.y = x,y
+        self.visible = True
+    def rajzolas(self, surf):
+        if not self.visible: return
+        self.counter = (self.counter + 1) % 3
+        if self.counter == 0: self.phase = (self.phase + 1) % (len(self.anim))
+        img = self.anim[self.phase]
+        w,h = img.get_size()
+        surf.blit(img, [self.x-w/2,self.y-h/2])
