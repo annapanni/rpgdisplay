@@ -23,7 +23,7 @@ move=False
 ### Load tokens ###
 sprites = []
 for cs, state in tokens:
-   tokenclass = eval(cs) 
+   tokenclass = globals()[cs] 
    sprites.append(tokenclass(**state))
 
 def save_state(poligons, sprites):
