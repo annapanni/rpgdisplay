@@ -4,27 +4,35 @@ import pygame
 from math import sqrt
 
 class Sprite():
+    size = {'S':3, 'M':5, 'L': 10, 'H': 15}
     moving=False
     explorer=False
-    def __init__(self, kep, meret, pos=(0,0)):
+    def __init__(self, kep='default.png', meret='M', pos=(0,0)):
+        self.meret = meret
+        s = feet*self.size[meret]
+        self.kep=kep
         a=pygame.image.load(kep)
-        self.kep=pygame.transform.scale(a, meret)
+        self.surface = pygame.transform.scale(a, (s,s))
         self.x, self.y= pos
     def rajzolas(self, surf):
-        w,h=self.kep.get_size()
-        surf.blit(self.kep, [self.x-w/2,self.y-h/2])
+        w,h=self.surface.get_size()
+        surf.blit(self.surface, [self.x-w/2,self.y-h/2])
     def copy(self):
         return copy(self)
+    def state(self):
+        return({'kep':self.kep, 'meret':self.meret, 'pos':self.pos})
+    @property
+    def pos(self): return (self.x, self.y)
 
 class Character (Sprite):
     moving=True
-    def __init__(self, nev, kep, meret, pos=(0,0), direction=0, speed=30):
+    def __init__(self, nev="Unknown", direction=0, speed=30, **args):
         self.nev=nev
         self.direction=direction
         self.speed=speed
         self.movebase=self.speed
         self.egyseg_x, self.egyseg_y, self.mozog=0,0,0
-        Sprite.__init__(self, kep, meret, pos)
+        Sprite.__init__(self, **args)
     def go_to(self, x,y):
         side1=abs(self.x-x)
         side2=abs(self.y-y)
@@ -41,20 +49,24 @@ class Character (Sprite):
         if self.mozog==0:
             self.egyseg_x= self.egyseg_y=0
         Sprite.rajzolas(self, surf)
+    def state(self):
+        st = {'nev':self.nev, 'direction':self.direction, 'speed':self.speed}
+        st.update(super().state())
+        return st
 
 class Player (Character):
     explorer=True
-    def __init__(self, nev, kep, meret, pos=(0,0), direction=0, speed=30, sight="no"):
+    def __init__(self, sight="no", **args):
         self.sight=sight
-        Character.__init__(self, nev, kep, meret, pos, direction, speed)
+        Character.__init__(self, **args)
+    def __repr__(self):
+        return("Player({})".format(self.nev))
+    def state(self):
+        st = super().state()
+        st.update({'sight':self.sight})
+        return st
+
 
 class Npc (Character):
     pass
 
-hanne=Player("Hanne","hanne.jpg", (feet*5,feet*5), (200,150))
-travis=Player("Travis","travis.png", (feet*5,feet*5), (400,300), sight="t")
-lia=Player("Lia","lia.png", (feet*5,feet*5), (500,450), 0, 35, "dv")
-gallindram=Player("Gallindram","gallindram.png", (feet*5,feet*5), (600,550), sight="dv")
-trench=Player("Trench","trench.jpg", (feet*5,feet*5), (100,150), sight="dv")
-
-orc=Npc( "Orc#1", "orc.png", (5*feet,5*feet), pos=(100,100))

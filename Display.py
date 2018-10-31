@@ -1,5 +1,5 @@
 from objects import *
-from state import polygons, feet
+from state import tokens,polygons, feet
 import pygame, sys, time
 from shadow import shadows
 from pygame.locals import *
@@ -20,12 +20,20 @@ enemynumber=0
 dead=False
 move=False
 
-def ment_poly(l):
+### Load tokens ###
+sprites = []
+for cs, state in tokens:
+   tokenclass = eval(cs) 
+   sprites.append(tokenclass(**state))
+
+def save_state(poligons, sprites):
     with open("state.py","w") as f:
-        f.write("polygons=")
-        f.write(repr(l))
-        f.write("\n")
-        f.write("feet="+str(feet)+"\n")
+        f.write("feet={}\n".format(feet))
+        f.write("polygons={}\n".format(poligons))
+        f.write("tokens=[\n")
+        for s in sprites:
+            f.write("('{}',{}),\n".format(type(s).__name__,s.state()))
+        f.write("]\n")
 
 def select(sprites, mx,my):
     susp=None
@@ -40,7 +48,6 @@ def select(sprites, mx,my):
     return susp
     
     
-sprites=[travis,hanne,lia,gallindram,trench]
 dungeon = pygame.transform.scale(pygame.image.load("dungeon2.jpg"), size)
 
 ##sötetseg
@@ -98,11 +105,9 @@ while 1:
                                 move.y=my
                                 move=False
                         elif enemy:
-                            orc.x=mx
-                            orc.y=my
                             enemynumber+=1
-                            orc.nev=str(enemynumber)
-                            sprites.append(orc.copy())
+                            nmi = Npc(nev="nmi"+str(enemynumber), kep="orc.png", meret='M', pos=(mx,my))
+                            sprites.append(nmi)
                             enemy=False
                         else:
                             onturn.go_to(mx,my)
@@ -116,15 +121,17 @@ while 1:
                                 turn=False
                         if event.key == K_F1:
                             grid= not grid
+                        if event.key == K_s: # savegame
+                            save_state(polygons,sprites)
                         if event.key==K_F12:
                             DM_mode= not DM_mode
-                            ment_poly(polygons)
+                            save_state(polygons,sprites)
                         if DM_mode:
                             if event.key==K_w:
                                 walls=not walls
                                 fal=[]
                                 if walls==False:
-                                    ment_poly(polygons)
+                                    save_state(polygons,sprites)
                             if event.key==K_u:
                                 if walls:
                                     fal=fal[0:-1] 
@@ -166,10 +173,10 @@ while 1:
                         if sprite.sight=="dv":
                             light=light_dv
                             lightrect=lightrect_dv
-                        if sprite.sight=="t":
+                        elif sprite.sight=="t":
                             light=light_t
                             lightrect=lightrect_t
-                        elif sprite.sight=="no":
+                        else:
                             continue
                         light2=light.copy()
                         pos=(sprite.x-lightrect.centerx,sprite.y-lightrect.centery)
