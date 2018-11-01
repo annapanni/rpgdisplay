@@ -108,9 +108,11 @@ while 1:
                                 move=False
                                 selector.visible = False
                         elif enemy:
+                            ellen.x=mx
+                            ellen.y=my
                             enemynumber+=1
-                            nmi = Npc(nev="nmi"+str(enemynumber), kep="orc.png", meret='M', pos=(mx,my))
-                            sprites.append(nmi)
+                            ellen.nev="Enemy#"+str(enemynumber)
+                            sprites.append(ellen.copy())
                             enemy=False
                         else:
                             onturn.go_to(mx,my)
