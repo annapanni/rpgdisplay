@@ -14,9 +14,10 @@ class Sprite():
         a=pygame.image.load(kep).convert_alpha()
         self.surface = pygame.transform.scale(a, (s,s))
         self.x, self.y= pos
-    def rajzolas(self, surf):
+    def rajzolas(self, surf, offset=(0,0)):
         w,h=self.surface.get_size()
-        surf.blit(self.surface, [self.x-w/2,self.y-h/2])
+        ox,oy=offset
+        surf.blit(self.surface, [self.x-w/2-ox,self.y-h/2-oy])
     def copy(self):
         return copy(self)
     def state(self):
@@ -42,13 +43,13 @@ class Character (Sprite):
             self.egyseg_x=(x-self.x)/(distance/2)
             self.egyseg_y=(y-self.y)/(distance/2)
             self.movebase+=-distance/feet
-    def rajzolas(self,surf):
+    def rajzolas(self,surf,offset=(0,0)):
         self.x+=self.egyseg_x
         self.y+=self.egyseg_y
         self.mozog+=-1
         if self.mozog==0:
             self.egyseg_x= self.egyseg_y=0
-        Sprite.rajzolas(self, surf)
+        Sprite.rajzolas(self, surf, offset)
     def state(self):
         st = {'nev':self.nev, 'direction':self.direction, 'speed':self.speed}
         st.update(super().state())
@@ -75,13 +76,14 @@ class Selector(Sprite):
         self.meret = 'M'
         self.go_to(0,0)
         self.counter = self.phase = 0
-        self.visible = True
+        self.visible = False
     def go_to(self,x,y):
         self.x, self.y = x,y
         self.visible = True
-    def rajzolas(self, surf):
+    def rajzolas(self, surf, offset):
         if not self.visible: return
         self.counter = (self.counter + 1) % 2
         w,h = self.surface.get_size()
         if self.counter == 0: self.phase = (self.phase + 1) % (w/h)
-        surf.blit(self.surface, [self.x-h/2,self.y-h/2], pygame.Rect(h*self.phase,0,h,h))
+        ox,oy=offset
+        surf.blit(self.surface, [self.x-h/2-ox,self.y-h/2-oy], pygame.Rect(h*self.phase,0,h,h))
