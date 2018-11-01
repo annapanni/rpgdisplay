@@ -11,7 +11,7 @@ class Sprite():
         self.meret = meret
         s = feet*self.size[meret]
         self.kep=kep
-        a=pygame.image.load(kep)
+        a=pygame.image.load(kep).convert_alpha()
         self.surface = pygame.transform.scale(a, (s,s))
         self.x, self.y= pos
     def rajzolas(self, surf):
@@ -71,8 +71,7 @@ class Npc (Character):
 
 class Selector(Sprite):
     def __init__(self, kep='selector.png'):
-        k = pygame.image.load(kep).convert_alpha()
-        self.anim = [ pygame.transform.scale(k, (n,n)) for n in range(feet*5,feet*5+32,4) ]
+        self.surface = pygame.image.load(kep).convert_alpha()
         self.meret = 'M'
         self.go_to(0,0)
         self.counter = self.phase = 0
@@ -82,8 +81,7 @@ class Selector(Sprite):
         self.visible = True
     def rajzolas(self, surf):
         if not self.visible: return
-        self.counter = (self.counter + 1) % 3
-        if self.counter == 0: self.phase = (self.phase + 1) % (len(self.anim))
-        img = self.anim[self.phase]
-        w,h = img.get_size()
-        surf.blit(img, [self.x-w/2,self.y-h/2])
+        self.counter = (self.counter + 1) % 2
+        w,h = self.surface.get_size()
+        if self.counter == 0: self.phase = (self.phase + 1) % (w/h)
+        surf.blit(self.surface, [self.x-h/2,self.y-h/2], pygame.Rect(h*self.phase,0,h,h))
