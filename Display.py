@@ -1,5 +1,5 @@
 from objects import *
-from state import tokens,polygons, feet
+from state import tokens, polygons, feet, dungeon
 import pygame, sys, time
 from shadow import shadows
 from pygame.locals import *
@@ -8,7 +8,9 @@ pygame.init()
 font = pygame.font.SysFont("comicsansms", 72)
 font_small = pygame.font.SysFont("comicsansms", 24)
 
-size = width, height = (1000,800)
+size = width, height = (1280,1024)
+window = pygame.Rect(0,0,width,height)
+scroll_step = 20*feet
 screen = pygame.display.set_mode(size)
 black = 0, 0, 0 , 255
 white = 255, 255, 255 , 255
@@ -26,8 +28,12 @@ for cs, state in tokens:
    tokenclass = globals()[cs] 
    sprites.append(tokenclass(**state))
 
+### Load Dungeon map ####
+background = pygame.image.load(dungeon)
+
 def save_state(poligons, sprites):
     with open("state.py","w") as f:
+        f.write("dungeon='{}'\n".format(dungeon))
         f.write("feet={}\n".format(feet))
         f.write("polygons={}\n".format(poligons))
         f.write("tokens=[\n")
@@ -46,14 +52,14 @@ def select(sprites, mx,my):
             susp=sprite
             susp_num=distance
     return susp
-    
-    
-dungeon = pygame.transform.scale(pygame.image.load("dungeon2.jpg"), size)
+
+def blit2screen(what, where, *arg, **darg):
+    screen.blit(what,(where[0]-window.x, where[1]-window.y), *arg, **darg)
+
 
 ##sötetseg
-basedarkness=pygame.Surface(size, SRCALPHA)
+basedarkness=pygame.Surface(background.get_size(), SRCALPHA)
 basedarkness.fill(black)
-darkrect= basedarkness.get_rect()
 
 ##feny
 def light (rect):
@@ -88,7 +94,8 @@ while 1:
                     if event.type == pygame.QUIT:
                         sys.exit()
                     if event.type == pygame.MOUSEBUTTONDOWN:
-                        mx,my=pygame.mouse.get_pos()
+                        smx,smy=pygame.mouse.get_pos()
+                        mx,my = smx+window.x, smy+window.y
                         if DM_mode:
                             if walls:
                                 fal.append((mx,my))
@@ -119,7 +126,7 @@ while 1:
                     if event.type == pygame.KEYDOWN:
                         if event.key == pygame.K_SPACE:
                             if DM_mode:
-                                if walls:
+                                if walls and len(fal)>1:
                                     polygons.append(fal)
                                     fal=[]
                             else:
@@ -151,8 +158,16 @@ while 1:
                             dead=not dead
                         if event.key==K_m:
                             move=not move
+                        if event.key==K_UP:
+                            if window.y >= scroll_step: window.y -= scroll_step
+                        if event.key==K_DOWN:
+                            window.y += scroll_step
+                        if event.key==K_LEFT:
+                            if window.x >= scroll_step: window.x -= scroll_step
+                        if event.key==K_RIGHT:
+                            window.x += scroll_step
         ##            Dungeon
-                screen.blit(dungeon, [0,0])
+                screen.blit(background, [0,0], window)
                 darkness=basedarkness.copy()
         ##            Grid
                 if grid:
@@ -167,13 +182,13 @@ while 1:
                     mb=round(onturn.movebase*feet)
                     mb_circle=pygame.Surface((mb*2,mb*2),SRCALPHA)
                     pygame.draw.circle(mb_circle, (200,255,200,150), (mb,mb), mb)
-                    screen.blit(mb_circle, (onturn.x-mb,onturn.y-mb))
+                    blit2screen(mb_circle, (onturn.x-mb,onturn.y-mb))
         ##            Characters + light
                 for sprite in sprites:
-                    sprite.rajzolas(screen)
+                    sprite.rajzolas(screen,(window.x,window.y))
                     if sprite.moving:
                         text = font_small.render((sprite.nev), True, (0,150,255))
-                        screen.blit(text,(sprite.x+2*feet, sprite.y+2*feet))
+                        blit2screen(text,(sprite.x+2*feet, sprite.y+2*feet))
                     if sprite.explorer:
                         if sprite.sight=="dv":
                             light=light_dv
@@ -185,7 +200,7 @@ while 1:
                             continue
                         light2=light.copy()
                         pos=(sprite.x-lightrect.centerx,sprite.y-lightrect.centery)
-                        arnyek=shadows(polygons, (sprite.x,sprite.y))
+                        arnyek=shadows(polygons, (sprite.x,sprite.y), 1000)
                         for shadow in arnyek:
                             ts=[(x-pos[0],y-pos[1]) for x,y in shadow]
                             pygame.draw.polygon(light2, black, ts)
@@ -193,15 +208,18 @@ while 1:
         ##            Walls/Darkness
                 if DM_mode:
                     for wall in polygons:
-                        pygame.draw.polygon(screen,(255,0,0),wall)
+                        tr_wall=[(x-window.x,y-window.y) for x,y in wall]
+                        pygame.draw.polygon(screen,(0,255,0),tr_wall,1)
                     if walls:
                         for i in  range(len(fal)-1):
-                             pygame.draw.line(screen, (0,0,255),fal[i],fal[i+1],3)   
+                            (x1,y1),(x2,y2) = fal[i], fal[i+1]
+                            pygame.draw.line(screen, (0,0,255),(x1-window.x, y1-window.y),(x2-window.x,y2-window.y),3)   
                 else:
-                    screen.blit(darkness, (0,0))
+                    screen.blit(darkness, (0,0), window)
         ##            Movebase-counter
                 if DM_mode==False:
-                    mx,my=pygame.mouse.get_pos()
+                    smx,smy=pygame.mouse.get_pos()
+                    mx,my=smx-window.x,smy-window.y
                     side1=abs(onturn.x-mx)
                     side2=abs(onturn.y-my)
                     distance=sqrt(side1**2+side2**2)
@@ -211,7 +229,7 @@ while 1:
                     else:
                         text = font.render(str(round(maradek)), True, (255,0,0))
                     screen.blit(text,(15,10))
-                selector.rajzolas(screen)
+                selector.rajzolas(screen,(window.x, window.y))
                 pygame.display.flip()
                 clock.tick(30)
     for sprite in sprites:
