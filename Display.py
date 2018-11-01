@@ -98,11 +98,11 @@ while 1:
                                 move.y=my
                                 move=False
                         elif enemy:
-                            orc.x=mx
-                            orc.y=my
+                            ellen.x=mx
+                            ellen.y=my
                             enemynumber+=1
-                            orc.nev=str(enemynumber)
-                            sprites.append(orc.copy())
+                            ellen.nev="Enemy#"+str(enemynumber)
+                            sprites.append(ellen.copy())
                             enemy=False
                         else:
                             onturn.go_to(mx,my)

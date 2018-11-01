@@ -57,4 +57,4 @@ lia=Player("Lia","lia.png", (feet*5,feet*5), (500,450), 0, 35, "dv")
 gallindram=Player("Gallindram","gallindram.png", (feet*5,feet*5), (600,550), sight="dv")
 trench=Player("Trench","trench.jpg", (feet*5,feet*5), (100,150), sight="dv")
 
-orc=Npc( "Orc#1", "orc.png", (5*feet,5*feet), pos=(100,100))
+ellen=Npc( "Enemy", "enemy.png", (5*feet,5*feet), pos=(100,100))
