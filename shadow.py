@@ -1,13 +1,8 @@
 import math
+import numpy as np
 from itertools import tee, count
 from pygame.math import Vector2
 
-def iter_edges(poligons):
-    """ iterate over all edges of poligons (list of (x,y) points) """
-    for pol in poligons:
-        for i in range(len(pol)-1):
-            yield (pol[i],pol[i+1])
-        yield (pol[i+1], pol[0])
 
 def cw(edge):
     """ return true if the edge is counter clockwise directed """
@@ -46,7 +41,22 @@ def clip(rect, edgelist):
     return filter(None,map(clip_edge, edgelist))
 
 
-def shadows(polygons, viewpoint, maxrange = None, direction=ccw, debug=False):
+class Obstacles:
+    """ Tárolja az akadályokat """
+    def __init__(self,polygons):
+        edges = []
+        for pol in polygons:
+            for i in range(len(pol)-1):
+                edges.append([pol[i+1], pol[0]])
+        self.obstacles = np.array(edges, np.float64)
+
+    def shadows(self,area_rect, viewpoint):
+        vp = np.array(viewpoint)
+        et = self.obstacles - vp # transformed edge coordinates
+        print(et)
+        
+
+def shadow(polygons, viewpoint, maxrange = None, direction=ccw, debug=False):
     """ létrehozza az árnyéktrapézokat
         x2 > x1 kivéve ha "túlfordul" vagyis átlép a 360 fokos határon
         (ez akkor fordul elő ha x1-x2 > pi)
@@ -83,6 +93,9 @@ def shadows(polygons, viewpoint, maxrange = None, direction=ccw, debug=False):
             pass
 
     return quads if not debug else (quads,debugdata)
+
+
+
 
 
 if __name__ == "__main__":
