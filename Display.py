@@ -21,6 +21,7 @@ enemy=False
 enemynumber=0
 dead=False
 move=False
+select=False
 
 ### Load tokens ###
 sprites = []
@@ -115,14 +116,14 @@ while 1:
                                 move=False
                                 selector.visible = False
                         elif enemy:
-                            ellen.x=mx
-                            ellen.y=my
-                            enemynumber+=1
-                            ellen.nev="Enemy#"+str(enemynumber)
-                            sprites.append(ellen.copy())
+                            sprites.append(Npc(nev="Enemy#"+str(enemynumber), kep= 'enemy.png', pos= (mx,my)))
                             enemy=False
                         else:
-                            onturn.go_to(mx,my)
+                            selected=select(sprites,mx,my)
+                            if selected is not None:
+                                onturn=selected
+                            else:
+                                onturn.go_to(mx,my)
                     if event.type == pygame.KEYDOWN:
                         if event.key == pygame.K_SPACE:
                             if DM_mode:
@@ -160,6 +161,10 @@ while 1:
                             move=not move
                         if event.key==K_UP:
                             if window.y >= scroll_step: window.y -= scroll_step
+                        if event.key==K_RETURN:
+                            for sprite in sprites:
+                                if sprite.moving:
+                                    sprite.movebase=sprite.speed
                         if event.key==K_DOWN:
                             window.y += scroll_step
                         if event.key==K_LEFT:
