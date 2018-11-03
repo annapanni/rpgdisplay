@@ -1,7 +1,7 @@
 from objects import *
 from state import tokens, polygons, feet, dungeon
 import pygame, sys, time
-from shadow import shadows
+from shadow import Obstacles
 from pygame.locals import *
 pygame.init()
 
@@ -31,6 +31,8 @@ for cs, state in tokens:
 
 ### Load Dungeon map ####
 background = pygame.image.load(dungeon)
+### Load walls ###
+obstacles=Obstacles(polygons)
 
 def save_state(poligons, sprites):
     with open("state.py","w") as f:
@@ -205,8 +207,8 @@ while 1:
                             continue
                         light2=light.copy()
                         pos=(sprite.x-lightrect.centerx,sprite.y-lightrect.centery)
-                        arnyek=shadows(polygons, (sprite.x,sprite.y), 1000)
-                        for shadow in arnyek:
+                        arnyekok = obstacles.shadows(window, (sprite.x,sprite.y))
+                        for shadow in arnyekok:
                             ts=[(x-pos[0],y-pos[1]) for x,y in shadow]
                             pygame.draw.polygon(light2, black, ts)
                         darkness.blit(light2,pos,None, BLEND_RGBA_MULT)
