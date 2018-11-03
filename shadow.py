@@ -1,5 +1,4 @@
 import numpy as np
-import numpy.linalg as la
 
 class Obstacles:
     """ Tárolja az akadályokat """
@@ -37,9 +36,9 @@ class Obstacles:
         mid = p1+p2
 
         shadow = np.stack(( validedges[:,0], validedges[:,1], 
-            p2 / np.expand_dims(la.norm(p2,axis=1),1) * 1000 +vp,
-            mid / np.expand_dims(la.norm(mid, axis=1),1)* 1000 +vp ,
-            p1 / np.expand_dims(la.norm(p1,axis=1),1)* 1000 +vp,
+            p2 / np.expand_dims(np.linalg.norm(p2,axis=1),1) * 1000 +vp,
+            mid / np.expand_dims(np.linalg.norm(mid, axis=1),1)* 1000 +vp ,
+            p1 / np.expand_dims(np.linalg.norm(p1,axis=1),1)* 1000 +vp,
             ), axis=1)
         
         return shadow.tolist() if not debug else (shadow.tolist(), validedges.tolist())
