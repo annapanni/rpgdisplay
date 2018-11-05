@@ -5,9 +5,10 @@ import pygame
 from shadow import *
 from pygame.locals import *
 from pygame.math import Vector2
-import state
+import polygons
+import numpy as np
 
-polygons = [[Vector2(p) for p in poly] for poly in state.polygons]
+polygons = [[Vector2(p) for p in poly] for poly in polygons.polygons]
 
 
 screensize = 1000,1000 
@@ -17,11 +18,11 @@ pygame.init()
 screen = pygame.display.set_mode(screensize)
 pygame.display.set_caption('Python shadow test')
 
-polysurf = pygame.Surface(screensize)
+polysurf = pygame.Surface(screensize, pygame.SRCALPHA)
 polysurf.fill((0, 0, 0))
 # draw polys
 for p in polygons :
-    pygame.draw.polygon(polysurf, white, p, 0)
+    pygame.draw.polygon(polysurf, (255,255,255,50), p, 0)
 
 shadowmap = pygame.Surface(screensize, SRCALPHA)
 
@@ -55,25 +56,37 @@ while runme:
             newpoly.append(point)
             
 
-    screen.blit(polysurf, (0,0))
     light = pygame.mouse.get_pos()
+    screen.blit(polysurf, (0,0))
 
     ### draw shadows
     shadowmap.fill((0, 0, 0, 0))
 
-    shadowlist, edgelist = obstacles.shadows((light[0]-1500,light[1]-1500,3000,3000),light, debug=True)
+    shadowlist, edgelist = obstacles.visible((light[0]-150,light[1]-150,300,300),light, debug=True)
 
-    for s in shadowlist:
+
+    for s in [shadowlist]:
         pygame.draw.polygon(shadowmap, (0,0,255,255), s, 0)
 
-    pygame.draw.circle(screen, (0,255,0), light, 10, 2) 
     screen.blit(shadowmap, (0,0))
+    
+    #intersections
+    edge = np.array([light, [light[0]+10,light[1]+10]]) # 45 fok
+    ixp = Obstacles.intersect(edge, obstacles.edges, strict=True)
+    ps = ixp[~ixp.mask].reshape(-1,2)
+    for i in ps:
+        pygame.draw.circle(screen, (0,255,0), (int(i[0]), int(i[1])), 10, 0) 
+    
+    
+    color =  (0,255,0,255) if obstacles.valid(light) else (255,0,0,255)
+    pygame.draw.circle(screen, color, light, 10, 2) 
     
     ### draw active debug edges
     for e in edgelist:
         pygame.draw.line(screen,(255,0,0), 
                 (e[0][0] , e[0][1] ) , 
                 (e[1][0] , e[1][1] ),3)
+    
 
     # show newpoly
     if len(newpoly) > 0 : pp = newpoly[0]
