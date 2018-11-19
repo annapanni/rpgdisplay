@@ -14,14 +14,16 @@ scroll_step = 20*feet
 screen = pygame.display.set_mode(size)
 black = 0, 0, 0 , 255
 white = 255, 255, 255 , 255
-grid=False
-DM_mode=False
-walls=False
-enemy=False
+global_state= {"grid":False,
+                "DM_mode":False,
+                "walls":False,
+                "enemy":False,
+                "dead":False,
+                "move":False,
+                "turn": False}
+to_move=None
+fal=[]
 enemynumber=0
-dead=False
-move=False
-select=False
 
 ### Load tokens ###
 sprites = []
@@ -32,6 +34,8 @@ for cs, state in tokens:
 ### Load Dungeon map ####
 background = pygame.image.load(dungeon)
 
+
+###Keyboard Functions###
 def save_state(poligons, sprites):
     with open("state.py","w") as f:
         f.write("dungeon='{}'\n".format(dungeon))
@@ -41,7 +45,66 @@ def save_state(poligons, sprites):
         for s in sprites:
             f.write("('{}',{}),\n".format(type(s).__name__,s.state()))
         f.write("]\n")
+        
+def wall_drawer():  
+    global fal, global_state
+    global_state["walls"]= not global_state["walls"]
+    fal=[]
+    if global_state["walls"]==False:
+        save_state(polygons,sprites)
+        
+def undo_walls():
+    global fal
+    if global_state["walls"]:
+        fal=fal[0:-1]
+        
+def add_walls():
+    global fal
+    if global_state["DM_mode"]:
+        if global_state["walls"] and len(fal)>1:
+            polygons.append(fal)
+            fal=[]
 
+def endturn():
+    global global_state
+    global_state["turn"]=False
+
+def endround():
+    for sprite in sprites:
+        if sprite.moving:
+            sprite.movebase=sprite.speed
+
+def add_torch():
+    global onturn
+    if onturn.sight=="no":
+        onturn.sight="t"
+    elif onturn.sight=="t":
+        onturn.sight="no"
+
+def scroll_up():
+    global window
+    if window.y >= scroll_step: window.y -= scroll_step
+def scroll_down():
+    global window
+    window.y += scroll_step
+def scroll_right():
+    global window
+    window.x += scroll_step
+def scroll_left():
+    global window
+    if window.x >= scroll_step: window.x -= scroll_step
+
+def switch(var):
+    def return_fnc():
+        global global_state
+        global_state[var]=not global_state[var]
+    return return_fnc
+
+def DM_mode():
+    switch("DM_mode")()
+    save_state(polygons,sprites)
+    
+##selector function
 def select(sprites, mx,my):
     susp=None
     susp_num=2.5*feet
@@ -54,8 +117,34 @@ def select(sprites, mx,my):
             susp_num=distance
     return susp
 
+
 def blit2screen(what, where, *arg, **darg):
     screen.blit(what,(where[0]-window.x, where[1]-window.y), *arg, **darg)
+
+### keyboard dict
+
+keyboard={K_SPACE: {"DM_mode": add_walls, "Player_mode": endturn},
+          K_F1: {"DM_mode": switch("grid"), "Player_mode": switch("grid") },
+          K_s: {"DM_mode": save_state, "Player_mode": save_state},
+          K_F12: {"DM_mode": DM_mode, "Player_mode": DM_mode},
+          K_w: {"DM_mode": wall_drawer},
+          K_u: {"DM_mode": undo_walls},
+          K_t: {"DM_mode": add_torch, "Player_mode":add_torch},
+          K_e: {"DM_mode": switch("enemy"), "Player_mode": switch("enemy")},
+          K_d: {"DM_mode": switch("dead"), "Player_mode": switch("dead")},
+          K_m: {"DM_mode": switch("move"), "Player_mode": switch("move")},
+          K_RETURN: {"DM_mode": endround, "Player_mode": endround},
+          K_UP: {"DM_mode": scroll_up, "Player_mode": scroll_up},
+          K_DOWN: {"DM_mode": scroll_down, "Player_mode": scroll_down},
+          K_LEFT: {"DM_mode": scroll_left, "Player_mode": scroll_left},
+          K_RIGHT: {"DM_mode": scroll_right, "Player_mode": scroll_right}
+          }
+
+
+
+
+
+
 
 
 ##sötetseg
@@ -85,9 +174,9 @@ clock=pygame.time.Clock()
 while 1:
     for onturn in sprites:
         if onturn.moving:
-            turn=True
-            while turn:
-                if DM_mode:
+            global_state["turn"]=True
+            while global_state["turn"]:
+                if global_state["DM_mode"]:
                     pygame.display.set_caption("DM mode")
                 else:
                     pygame.display.set_caption("{}'s turn".format(onturn.nev))
@@ -97,27 +186,28 @@ while 1:
                     if event.type == pygame.MOUSEBUTTONDOWN:
                         smx,smy=pygame.mouse.get_pos()
                         mx,my = smx+window.x, smy+window.y
-                        if DM_mode:
-                            if walls:
+                        if global_state["DM_mode"]:
+                            if global_state["walls"]:
                                 fal.append((mx,my))
-                        if dead:
+                        if global_state["dead"]:
                             selected=select(sprites, mx,my)
                             if selected is not None:
                                 sprites.remove(selected)
-                                dead=False
-                        elif move==True:
+                                global_state["dead"]=False
+                        elif global_state["move"]==True:
                             selected=select(sprites,mx,my)
                             if selected is not None:
                                 selector.go_to(selected.x,selected.y)
-                                move=selected
-                        elif move !=False:
-                                move.x=mx
-                                move.y=my
-                                move=False
+                                to_move=selected
+                            elif to_move is not None:
+                                to_move.x=mx
+                                to_move.y=my
+                                to_move=None
+                                global_state["move"]=False
                                 selector.visible = False
-                        elif enemy:
+                        elif global_state["enemy"]:
                             sprites.append(Npc(nev="Enemy#"+str(enemynumber), kep= 'enemy.png', pos= (mx,my)))
-                            enemy=False
+                            global_state["enemy"]=False
                         else:
                             selected=select(sprites,mx,my)
                             if selected is not None:
@@ -125,57 +215,20 @@ while 1:
                             else:
                                 onturn.go_to(mx,my)
                     if event.type == pygame.KEYDOWN:
-                        if event.key == pygame.K_SPACE:
-                            if DM_mode:
-                                if walls and len(fal)>1:
-                                    polygons.append(fal)
-                                    fal=[]
-                            else:
-                                turn=False
-                        if event.key == K_F1:
-                            grid= not grid
-                        if event.key == K_s: # savegame
-                            save_state(polygons,sprites)
-                        if event.key==K_F12:
-                            DM_mode= not DM_mode
-                            save_state(polygons,sprites)
-                        if DM_mode:
-                            if event.key==K_w:
-                                walls=not walls
-                                fal=[]
-                                if walls==False:
-                                    save_state(polygons,sprites)
-                            if event.key==K_u:
-                                if walls:
-                                    fal=fal[0:-1] 
-                        if event.key==K_t:
-                            if onturn.sight=="no":
-                                onturn.sight="t"
-                            elif onturn.sight=="t":
-                                onturn.sight="no"
-                        if event.key==K_e:
-                            enemy=not enemy
-                        if event.key==K_d:
-                            dead=not dead
-                        if event.key==K_m:
-                            move=not move
-                        if event.key==K_UP:
-                            if window.y >= scroll_step: window.y -= scroll_step
-                        if event.key==K_RETURN:
-                            for sprite in sprites:
-                                if sprite.moving:
-                                    sprite.movebase=sprite.speed
-                        if event.key==K_DOWN:
-                            window.y += scroll_step
-                        if event.key==K_LEFT:
-                            if window.x >= scroll_step: window.x -= scroll_step
-                        if event.key==K_RIGHT:
-                            window.x += scroll_step
+                        for key in keyboard.keys():
+                            if key==event.key:
+                                if global_state["DM_mode"]:
+                                    mode="DM_mode"
+                                else:
+                                    mode="Player_mode"
+                                if mode in keyboard[key].keys():
+                                    keyboard[key][mode]()           
+                            
         ##            Dungeon
                 screen.blit(background, [0,0], window)
                 darkness=basedarkness.copy()
         ##            Grid
-                if grid:
+                if global_state["grid"]:
                     for gridx in range(0,width,5*feet):
                         pygame.draw.line(screen, black,(gridx,0),(gridx,height),3)
                         pygame.draw.line(screen, white,(gridx,0),(gridx,height))
@@ -183,7 +236,7 @@ while 1:
                         pygame.draw.line(screen, black,(0, gridy),(width,gridy),3)
                         pygame.draw.line(screen, white,(0, gridy),(width,gridy))
         ##            Movevbase-circle        
-                if DM_mode==False:
+                if global_state["DM_mode"]==False:
                     mb=round(onturn.movebase*feet)
                     mb_circle=pygame.Surface((mb*2,mb*2),SRCALPHA)
                     pygame.draw.circle(mb_circle, (200,255,200,150), (mb,mb), mb)
@@ -211,18 +264,18 @@ while 1:
                             pygame.draw.polygon(light2, black, ts)
                         darkness.blit(light2,pos,None, BLEND_RGBA_MULT)
         ##            Walls/Darkness
-                if DM_mode:
+                if global_state["DM_mode"]:
                     for wall in polygons:
                         tr_wall=[(x-window.x,y-window.y) for x,y in wall]
                         pygame.draw.polygon(screen,(0,255,0),tr_wall,1)
-                    if walls:
+                    if global_state["walls"]:
                         for i in  range(len(fal)-1):
                             (x1,y1),(x2,y2) = fal[i], fal[i+1]
                             pygame.draw.line(screen, (0,0,255),(x1-window.x, y1-window.y),(x2-window.x,y2-window.y),3)   
                 else:
                     screen.blit(darkness, (0,0), window)
         ##            Movebase-counter
-                if DM_mode==False:
+                if global_state["DM_mode"]==False:
                     smx,smy=pygame.mouse.get_pos()
                     mx,my=smx-window.x,smy-window.y
                     side1=abs(onturn.x-mx)
