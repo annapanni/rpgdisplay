@@ -24,6 +24,7 @@ global_state= {"grid":False,
 to_move=None
 fal=[]
 enemynumber=0
+keyboard={}
 
 ### Load tokens ###
 sprites = []
@@ -34,8 +35,20 @@ for cs, state in tokens:
 ### Load Dungeon map ####
 background = pygame.image.load(dungeon)
 
+####Keyboard dict decorator###
+def onkey (key, modes=["DM_mode", "Player_mode"]):
+    def return_fnc(fnc):
+        global keyboard
+        for i in modes:
+            if key not in keyboard.keys():
+                keyboard[key]={}
+            keyboard[key].update({i: fnc})
+        return fnc
+    return return_fnc
+
 
 ###Keyboard Functions###
+@onkey(K_x)
 def save_state(poligons, sprites):
     with open("state.py","w") as f:
         f.write("dungeon='{}'\n".format(dungeon))
@@ -45,7 +58,8 @@ def save_state(poligons, sprites):
         for s in sprites:
             f.write("('{}',{}),\n".format(type(s).__name__,s.state()))
         f.write("]\n")
-        
+
+@onkey(K_w, modes=["DM_mode"])
 def wall_drawer():  
     global fal, global_state
     global_state["walls"]= not global_state["walls"]
@@ -53,11 +67,13 @@ def wall_drawer():
     if global_state["walls"]==False:
         save_state(polygons,sprites)
         
+@onkey(K_u, modes=["DM_mode"])
 def undo_walls():
     global fal
     if global_state["walls"]:
         fal=fal[0:-1]
-        
+
+@onkey(K_SPACE, modes=["DM_mode"])
 def add_walls():
     global fal
     if global_state["DM_mode"]:
@@ -65,15 +81,18 @@ def add_walls():
             polygons.append(fal)
             fal=[]
 
+@onkey(K_SPACE, modes=["Player_mode"])
 def endturn():
     global global_state
     global_state["turn"]=False
 
+@onkey(K_RETURN)
 def endround():
     for sprite in sprites:
         if sprite.moving:
             sprite.movebase=sprite.speed
 
+@onkey(K_t)
 def add_torch():
     global onturn
     if onturn.sight=="no":
@@ -81,18 +100,23 @@ def add_torch():
     elif onturn.sight=="t":
         onturn.sight="no"
 
+@onkey(K_UP)
 def scroll_up():
     global window
     if window.y >= scroll_step: window.y -= scroll_step
+@onkey(K_DOWN)
 def scroll_down():
     global window
     window.y += scroll_step
+@onkey(K_RIGHT)
 def scroll_right():
     global window
     window.x += scroll_step
+@onkey(K_LEFT)
 def scroll_left():
     global window
     if window.x >= scroll_step: window.x -= scroll_step
+
 
 def switch(var):
     def return_fnc():
@@ -100,10 +124,18 @@ def switch(var):
         global_state[var]=not global_state[var]
     return return_fnc
 
+onkey(K_e)(switch("enemy"))
+onkey(K_F1)(switch("grid"))
+onkey(K_m)(switch("move"))
+onkey(K_d)(switch("dead"))
+
+@onkey(K_F12)
 def DM_mode():
     switch("DM_mode")()
     save_state(polygons,sprites)
     
+    
+print(keyboard)    
 ##selector function
 def select(sprites, mx,my):
     susp=None
@@ -120,32 +152,6 @@ def select(sprites, mx,my):
 
 def blit2screen(what, where, *arg, **darg):
     screen.blit(what,(where[0]-window.x, where[1]-window.y), *arg, **darg)
-
-### keyboard dict
-
-keyboard={K_SPACE: {"DM_mode": add_walls, "Player_mode": endturn},
-          K_F1: {"DM_mode": switch("grid"), "Player_mode": switch("grid") },
-          K_s: {"DM_mode": save_state, "Player_mode": save_state},
-          K_F12: {"DM_mode": DM_mode, "Player_mode": DM_mode},
-          K_w: {"DM_mode": wall_drawer},
-          K_u: {"DM_mode": undo_walls},
-          K_t: {"DM_mode": add_torch, "Player_mode":add_torch},
-          K_e: {"DM_mode": switch("enemy"), "Player_mode": switch("enemy")},
-          K_d: {"DM_mode": switch("dead"), "Player_mode": switch("dead")},
-          K_m: {"DM_mode": switch("move"), "Player_mode": switch("move")},
-          K_RETURN: {"DM_mode": endround, "Player_mode": endround},
-          K_UP: {"DM_mode": scroll_up, "Player_mode": scroll_up},
-          K_DOWN: {"DM_mode": scroll_down, "Player_mode": scroll_down},
-          K_LEFT: {"DM_mode": scroll_left, "Player_mode": scroll_left},
-          K_RIGHT: {"DM_mode": scroll_right, "Player_mode": scroll_right}
-          }
-
-
-
-
-
-
-
 
 ##sötetseg
 basedarkness=pygame.Surface(background.get_size(), SRCALPHA)
