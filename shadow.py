@@ -1,93 +1,51 @@
-import math
-from itertools import tee, count
-from pygame.math import Vector2
+import numpy as np
 
-def iter_edges(poligons):
-    """ iterate over all edges of poligons (list of (x,y) points) """
-    for pol in poligons:
-        for i in range(len(pol)-1):
-            yield (pol[i],pol[i+1])
-        yield (pol[i+1], pol[0])
+class Obstacles:
+    """ Tárolja az akadályokat """
+    def __init__(self,polygons):
+        edges = []
+        for pol in polygons:
+            for i in range(len(pol)-1):
+                edges.append([pol[i], pol[i+1]])
+        edges.append([pol[i+1], pol[0]])
+        self.edges = np.array(edges, np.float64)
 
-def cw(edge):
-    """ return true if the edge is counter clockwise directed """
-    ((x1,y1),(x2,y2)) = edge
-    return (x1*y2)-(y1*x2) < 0
+    def shadows(self,area_rect, viewpoint, debug=False):
+        cxmin,cymin,w,h = area_rect
+        cxmax,cymax = cxmin + w, cymin + h
 
-def ccw(edge):
-    return not cw(edge)
+        vp = np.array(viewpoint)
+        p1, p2 = self.edges[:,0], self.edges[:,1] # edges from viewpoint
+        ccw = np.cross((p2-vp) , (p1-vp)) < 0 # counterclockwise directed edges
+        nonzero = (p1!=vp).any(axis=1) & (p2 != vp).any(axis=1)
 
-def clip(rect, edgelist):
-    """ clip edgelist to rectangular area"""
-    def clip_edge(edge): # -> edge (or None if not contained)
-        cx1,cy1,w,h = rect
-        cx2,cy2 = cx1 + w, cy1 + h
-        p1, p2 = edge
+        p1c =   np.where(p1[:,0] <cxmin,0b0001,0) |\
+                np.where(p1[:,0] >cxmax,0b0010,0) |\
+                np.where(p1[:,1] <cymin,0b0100,0) |\
+                np.where(p1[:,1] >cymax,0b1000,0) 
 
-        def code(p):
-            code = 0b000
-            if p[0] < cx1: code  = 0b0001  
-            if p[0] > cx2: code  = 0b0010  
-            if p[1] < cy1: code |= 0b0100  
-            if p[1] > cy2: code |= 0b1000  
-            return code
+        p2c =   np.where(p2[:,0] <cxmin,0b0001,0) |\
+                np.where(p2[:,0] >cxmax,0b0010,0) |\
+                np.where(p2[:,1] <cymin,0b0100,0) |\
+                np.where(p2[:,1] >cymax,0b1000,0) 
 
-        code1 , code2 = code(p1), code(p2)
+        #validedges = self.edges[nonzero &  ((p1c & p2c) == 0)]   # nonzero ccw edges in clip rectangle
+        validedges = self.edges[nonzero & ccw & ((p1c & p2c) == 0)]   # nonzero ccw edges in clip rectangle
+
+        p1,p2 = validedges[:,0]-vp, validedges[:,1]-vp
+        mid = p1+p2
+
+        shadow = np.stack(( validedges[:,0], validedges[:,1], 
+            p2 / np.expand_dims(np.linalg.norm(p2,axis=1),1) * 1000 +vp,
+            mid / np.expand_dims(np.linalg.norm(mid, axis=1),1)* 1000 +vp ,
+            p1 / np.expand_dims(np.linalg.norm(p1,axis=1),1)* 1000 +vp,
+            ), axis=1)
         
-        if code1 == 0 and code2 == 0 :  return edge # completely inside
-        if code1 & code2 != 0:          return None # completely outside
-
-        # at least one of the point is outside (find it)
-        outpoint,otherpoint = (p1,p2) if code1 == 0 else (p2,p1)
-        ### TODO: actually clip the edge
-        cedge = edge
-        return cedge
-
-    return filter(None,map(clip_edge, edgelist))
-
-
-def shadows(polygons, viewpoint, maxrange = None, direction=ccw, debug=False):
-    """ létrehozza az árnyéktrapézokat
-        x2 > x1 kivéve ha "túlfordul" vagyis átlép a 360 fokos határon
-        (ez akkor fordul elő ha x1-x2 > pi)
-        polygons: list of polygons [[(x,y),(x,y)...], [(x,y),(x,y)..]]
-        viewpoint: (x,y)
-        maxrange: int
-    """
-    
-    vx,vy = viewpoint
-
-    def offset(x, y):
-        return lambda points: list((v[0] + x, v[1] + y) for v in points)
-
-    tr_polygons = map(offset(-vx,-vy), polygons)
-    tr_edges = filter(direction, iter_edges(tr_polygons))
-    
-    if (maxrange is not None):
-        cliprect = (-maxrange/2, -maxrange/2, maxrange, maxrange)
-        tr_edges = clip(cliprect, tr_edges)
-    else :
-        maxrange = 500
-
-    quads = []
-    debugdata = []
-
-    for p1, p2 in tr_edges:
-        v1,v2 = Vector2(p1), Vector2(p2)
-        try:
-            vm = (v1.normalize()+v2.normalize())
-            if debug: debugdata.append((p1,p2))
-            tdek = (v1, v2, v2.normalize()*maxrange, vm.normalize()*maxrange, v1.normalize()*maxrange)
-            quads.append(offset(vx,vy)(tdek))
-        except ValueError:
-            pass
-
-    return quads if not debug else (quads,debugdata)
-
+        return shadow.tolist() if not debug else (shadow.tolist(), validedges.tolist())
 
 if __name__ == "__main__":
     center = 300,300
-    pontok = [
+    obst = [[
             (0,0),
             (30,50),
             (170,150),
@@ -95,21 +53,13 @@ if __name__ == "__main__":
             (200,50),
             (400,450),
             (475,410),
-            ]
+            ]]
 
-    print('polar test:')
-    for p in pontok:
-        pol = to_polar(p) 
-        orig = list(round(x,10) for x in from_polar(pol))
-        print(p,"->", (pol[0]*180/math.pi, pol[1] ),  "->", orig)
-        assert(list(p) == orig) 
-        print("-----------------------")
-    print()
-
-    print (shadows(pontok, center, 200))
+    o = Obstacles(obst)
+    print (o.shadows((0,0,200,200), center))
 
 
-    
+        
 
 
 

@@ -10,7 +10,7 @@ import state
 polygons = [[Vector2(p) for p in poly] for poly in state.polygons]
 
 
-screensize = 800, 800
+screensize = 1000,1000 
 white = (255,255,255)
 
 pygame.init()
@@ -31,6 +31,8 @@ clock = pygame.time.Clock()
 counter = 0
 
 newpoly = []
+
+obstacles = Obstacles(polygons)
 
 while runme:
     for event in pygame.event.get():
@@ -59,7 +61,7 @@ while runme:
     ### draw shadows
     shadowmap.fill((0, 0, 0, 0))
 
-    shadowlist, edgelist = shadows(polygons,light,300, debug=True)
+    shadowlist, edgelist = obstacles.shadows((light[0]-1500,light[1]-1500,3000,3000),light, debug=True)
 
     for s in shadowlist:
         pygame.draw.polygon(shadowmap, (0,0,255,255), s, 0)
@@ -70,8 +72,8 @@ while runme:
     ### draw active debug edges
     for e in edgelist:
         pygame.draw.line(screen,(255,0,0), 
-                (e[0][0] + light[0], e[0][1] + light[1]) , 
-                (e[1][0] + light[0], e[1][1] + light[1]),3)
+                (e[0][0] , e[0][1] ) , 
+                (e[1][0] , e[1][1] ),3)
 
     # show newpoly
     if len(newpoly) > 0 : pp = newpoly[0]
