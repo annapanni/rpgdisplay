@@ -27,12 +27,23 @@ class Sprite():
 
 class Character (Sprite):
     moving=True
-    def __init__(self, nev="Unknown", direction=0, speed=30, **args):
+    def __init__(self, nev="Unknown", direction=0, speed=30, maxhp=20, hp=20, stats=None, **args):
         self.nev=nev
         self.direction=direction
         self.speed=speed
         self.movebase=self.speed
         self.egyseg_x, self.egyseg_y, self.mozog=0,0,0
+        self.maxhp=maxhp
+        self.hp=hp
+        if stats is None:
+            self.stats={"STR":10,
+                        "DEX":10,
+                        "CON":10,
+                        "INT":10,
+                        "WIS":10,
+                        "CHA":10}
+        else:
+            self.stats=stats
         Sprite.__init__(self, **args)
     def go_to(self, x,y):
         side1=abs(self.x-x)
@@ -51,7 +62,7 @@ class Character (Sprite):
             self.egyseg_x= self.egyseg_y=0
         Sprite.rajzolas(self, surf, offset)
     def state(self):
-        st = {'nev':self.nev, 'direction':self.direction, 'speed':self.speed}
+        st = {'nev':self.nev, 'direction':self.direction, 'speed':self.speed, "maxhp": self.maxhp, "hp":self.hp, "stats": self.stats}
         st.update(super().state())
         return st
 

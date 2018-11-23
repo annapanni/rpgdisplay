@@ -10,6 +10,7 @@ font_small = pygame.font.SysFont("comicsansms", 24)
 
 size = width, height = (1280,1024)
 window = pygame.Rect(0,0,width,height)
+formsize=(350,200)
 scroll_step = 20*feet
 screen = pygame.display.set_mode(size)
 black = 0, 0, 0 , 255
@@ -27,6 +28,8 @@ enemynumber=0
 keyboard={}
 
 ### Load tokens ###
+cross=pygame.image.load("cross.png")
+cross=pygame.transform.scale(cross, (6*feet, 6*feet))
 sprites = []
 for cs, state in tokens:
    tokenclass = globals()[cs] 
@@ -50,12 +53,13 @@ def onkey (key, modes=["DM_mode", "Player_mode"]):
 
 
 ###Keyboard Functions###
-@onkey(K_x)
-def save_state(poligons, sprites):
+@onkey(K_s)
+def save_state():
+    global polygons, sprites
     with open("state.py","w") as f:
         f.write("dungeon='{}'\n".format(dungeon))
         f.write("feet={}\n".format(feet))
-        f.write("polygons={}\n".format(poligons))
+        f.write("polygons={}\n".format(polygons))
         f.write("tokens=[\n")
         for s in sprites:
             f.write("('{}',{}),\n".format(type(s).__name__,s.state()))
@@ -67,7 +71,7 @@ def wall_drawer():
     global_state["walls"]= not global_state["walls"]
     fal=[]
     if global_state["walls"]==False:
-        save_state(polygons,sprites)
+        save_state()
         
 @onkey(K_u, modes=["DM_mode"])
 def undo_walls():
@@ -134,10 +138,8 @@ onkey(K_d)(switch("dead"))
 @onkey(K_F12)
 def DM_mode():
     switch("DM_mode")()
-    save_state(polygons,sprites)
-    
-    
-print(keyboard)    
+    save_state()
+      
 ##selector function
 def select(sprites, mx,my):
     susp=None
@@ -175,6 +177,10 @@ lightrect_t=Rect(0,0,60*feet,60*feet)
 light_dv=light(lightrect_dv)
 light_t=light(lightrect_t)
 
+##Kiiro negyzet (form)
+form=pygame.Surface(formsize)
+form.fill(white)
+
 selector = Selector()
 
 clock=pygame.time.Clock()
@@ -194,34 +200,46 @@ while 1:
                     if event.type == pygame.MOUSEBUTTONDOWN:
                         smx,smy=pygame.mouse.get_pos()
                         mx,my = smx+window.x, smy+window.y
-                        if global_state["DM_mode"]:
-                            if global_state["walls"]:
-                                fal.append((mx,my))
-                        if global_state["dead"]:
+                        if pygame.mouse.get_pressed()[2]:
                             selected=select(sprites, mx,my)
                             if selected is not None:
-                                sprites.remove(selected)
-                                global_state["dead"]=False
-                        elif global_state["move"]==True:
-                            selected=select(sprites,mx,my)
-                            if selected is not None:
-                                selector.go_to(selected.x,selected.y)
-                                to_move=selected
-                            elif to_move is not None:
-                                to_move.x=mx
-                                to_move.y=my
-                                to_move=None
-                                global_state["move"]=False
-                                selector.visible = False
-                        elif global_state["enemy"]:
-                            sprites.append(Npc(nev="Enemy#"+str(enemynumber), kep= 'enemy.png', pos= (mx,my)))
-                            global_state["enemy"]=False
+                                keys=pygame.key.get_pressed()
+                                change=-1
+                                if keys[K_LCTRL] or keys[K_RCTRL]:
+                                    change=-10
+                                if keys[K_LSHIFT] or keys[K_RSHIFT]:
+                                    change=change*-1
+                                selected.hp+=change   
                         else:
-                            selected=select(sprites,mx,my)
-                            if selected is not None:
-                                onturn=selected
+                            if global_state["DM_mode"]:
+                                if global_state["walls"]:
+                                    fal.append((mx,my))
+                            if global_state["dead"]:
+                                selected=select(sprites, mx,my)
+                                if selected is not None:
+                                    sprites.remove(selected)
+                                    global_state["dead"]=False
+                            elif global_state["move"]==True:
+                                selected=select(sprites,mx,my)
+                                if selected is not None:
+                                    selector.go_to(selected.x,selected.y)
+                                    to_move=selected
+                                elif to_move is not None:
+                                    to_move.x=mx
+                                    to_move.y=my
+                                    to_move=None
+                                    global_state["move"]=False
+                                    selector.visible = False
+                            elif global_state["enemy"]:
+                                sprites.append(Npc(nev="Enemy#"+str(enemynumber), kep= 'enemy.png', pos= (mx,my)))
+                                enemynumber+=1
+                                global_state["enemy"]=False
                             else:
-                                onturn.go_to(mx,my)
+                                selected=select(sprites,mx,my)
+                                if selected is not None:
+                                    onturn=selected
+                                else:
+                                    onturn.go_to(mx,my)   
                     if event.type == pygame.KEYDOWN:
                         for key in keyboard.keys():
                             if key==event.key:
@@ -252,6 +270,8 @@ while 1:
         ##            Characters + light
                 for sprite in sprites:
                     sprite.rajzolas(screen,(window.x,window.y))
+                    if sprite.hp <= 0:
+                        screen.blit(cross, (sprite.x-2.5*feet, sprite.y-3*feet))
                     if sprite.moving:
                         text = font_small.render((sprite.nev), True, (0,150,255))
                         blit2screen(text,(sprite.x+2*feet, sprite.y+2*feet))
@@ -296,6 +316,24 @@ while 1:
                         text = font.render(str(round(maradek)), True, (255,0,0))
                     screen.blit(text,(15,10))
                 selector.rajzolas(screen,(window.x, window.y))
+##                Stats kiiro négyzet (form)
+                mx,my=pygame.mouse.get_pos()
+                selected=select(sprites, mx,my)
+                if selected is not None:
+                    screen.blit(form, [mx,my])
+                    text = font.render((selected.nev), True, black)
+                    screen.blit(text, [mx+20, my+20])
+                    to_render=["STR: "+ str(selected.stats["STR"]), "DEX: " + str(selected.stats["DEX"]), "CON: " +str(selected.stats["CON"])]
+                    for key, value in enumerate(to_render):
+                        text = font_small.render((str(value)), True, black)
+                        screen.blit(text, [mx+20, my+30*(key+1)+50])
+                    to_render=["INT: "+ str(selected.stats["INT"]), "WIS: " + str(selected.stats["WIS"]), "CHA: " +str(selected.stats["CHA"])]
+                    for key, value in enumerate(to_render):
+                        text = font_small.render((str(value)), True, black)
+                        screen.blit(text, [mx+120, my+30*(key+1)+50])
+                    text=font_small.render(("Hp: "+ str(selected.hp)), True, black)
+                    screen.blit(text, [mx+220, my+80])
+                    
                 pygame.display.flip()
                 clock.tick(30)
     for sprite in sprites:
