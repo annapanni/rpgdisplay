@@ -1,8 +1,9 @@
 from objects import *
-from state import tokens, polygons, feet, dungeon
+from state import tokens, polygons, feet, dungeon, bckgr_music, enemies
 import pygame, sys, time
 from shadow import Obstacles
 from pygame.locals import *
+from copy import copy
 pygame.init()
 
 font = pygame.font.SysFont("comicsansms", 72)
@@ -11,6 +12,7 @@ font_small = pygame.font.SysFont("comicsansms", 24)
 size = width, height = (1280,1024)
 window = pygame.Rect(0,0,width,height)
 formsize=(350,200)
+menusize=size
 scroll_step = 20*feet
 screen = pygame.display.set_mode(size)
 black = 0, 0, 0 , 255
@@ -24,17 +26,21 @@ global_state= {"grid":False,
                 "turn": False}
 to_move=None
 fal=[]
-enemynumber=0
+chosen_enemy=(Npc(nev="Enemy#0", kep= 'enemy.png'))
 keyboard={}
 
 ### Load tokens ###
 cross=pygame.image.load("cross.png")
 cross=pygame.transform.scale(cross, (6*feet, 6*feet))
 sprites = []
+enemylist=[]
 for cs, state in tokens:
    tokenclass = globals()[cs] 
    sprites.append(tokenclass(**state))
-
+for cs, state in enemies:
+   tokenclass = globals()[cs] 
+   enemylist.append(tokenclass(**state))
+   
 ### Load Dungeon map ####
 background = pygame.image.load(dungeon)
 ### Load walls ###
@@ -58,10 +64,15 @@ def save_state():
     global polygons, sprites
     with open("state.py","w") as f:
         f.write("dungeon='{}'\n".format(dungeon))
+        f.write("bckgr_music={}\n".format(bckgr_music))
         f.write("feet={}\n".format(feet))
         f.write("polygons={}\n".format(polygons))
         f.write("tokens=[\n")
         for s in sprites:
+            f.write("('{}',{}),\n".format(type(s).__name__,s.state()))
+        f.write("]\n")
+        f.write("enemies=[\n")
+        for s in enemylist:
             f.write("('{}',{}),\n".format(type(s).__name__,s.state()))
         f.write("]\n")
 
@@ -130,7 +141,6 @@ def switch(var):
         global_state[var]=not global_state[var]
     return return_fnc
 
-onkey(K_e)(switch("enemy"))
 onkey(K_F1)(switch("grid"))
 onkey(K_m)(switch("move"))
 onkey(K_d)(switch("dead"))
@@ -139,7 +149,52 @@ onkey(K_d)(switch("dead"))
 def DM_mode():
     switch("DM_mode")()
     save_state()
-      
+
+@onkey(K_1)
+def play_music1():
+    pygame.mixer.music.load(bckgr_music[0])
+    pygame.mixer.music.play(-1)    
+@onkey(K_2)
+def play_music1():
+    pygame.mixer.music.load(bckgr_music[1])
+    pygame.mixer.music.play(-1)
+@onkey(K_3)
+def play_music1():
+    pygame.mixer.music.load(bckgr_music[2])
+    pygame.mixer.music.play(-1)
+    
+@onkey(K_TAB)
+def enemy_menu():
+    screen.blit(menu, [0,0])
+    counter=0
+    for oszlop in range(int(height/70)):
+        for sor in range(int(width/70)):
+            if counter==len(enemylist):
+                break
+            enemylist[counter].menurajzolas(screen, (sor*70, oszlop*70))
+            enemylist[counter].x, enemylist[counter].y= sor*70+25, oszlop*70+25
+            text = font_small.render((enemylist[counter].nev[0:7]), True, black)
+            blit2screen(text,(sor*70, oszlop*70+50))
+            counter+=1
+        if counter==len(enemylist):
+                break
+        counter+=1
+    pygame.display.flip()
+    while True:
+        for event in pygame.event.get():
+            if event.type == pygame.MOUSEBUTTONDOWN:
+                mx,my=pygame.mouse.get_pos()
+                selected=select(enemylist, mx,my)
+                if selected is not None:
+                    global chosen_enemy
+                    chosen_enemy=selected
+                    global_state["enemy"]=True
+                    return                
+@onkey(K_ESCAPE)
+def escape_enemy():
+    global global_state
+    global_state["enemy"]=False
+
 ##selector function
 def select(sprites, mx,my):
     susp=None
@@ -181,9 +236,13 @@ light_t=light(lightrect_t)
 form=pygame.Surface(formsize)
 form.fill(white)
 
-selector = Selector()
+##enemy-menu
+menu=pygame.Surface(menusize)
+menu.fill(white)
 
+selector = Selector()
 clock=pygame.time.Clock()
+
 ##main loop
 while 1:
     for onturn in sprites:
@@ -231,9 +290,9 @@ while 1:
                                     global_state["move"]=False
                                     selector.visible = False
                             elif global_state["enemy"]:
-                                sprites.append(Npc(nev="Enemy#"+str(enemynumber), kep= 'enemy.png', pos= (mx,my)))
-                                enemynumber+=1
-                                global_state["enemy"]=False
+                                e=copy(chosen_enemy)
+                                e.x,e.y=mx,my
+                                sprites.append(e)
                             else:
                                 selected=select(sprites,mx,my)
                                 if selected is not None:
