@@ -150,18 +150,18 @@ def DM_mode():
     switch("DM_mode")()
     save_state()
 
-@onkey(K_1)
-def play_music1():
-    pygame.mixer.music.load(bckgr_music[0])
-    pygame.mixer.music.play(-1)    
-@onkey(K_2)
-def play_music1():
-    pygame.mixer.music.load(bckgr_music[1])
-    pygame.mixer.music.play(-1)
-@onkey(K_3)
-def play_music1():
-    pygame.mixer.music.load(bckgr_music[2])
-    pygame.mixer.music.play(-1)
+def play_music(var):
+    def return_fnc():
+        try:
+            pygame.mixer.music.load(bckgr_music[var])
+            pygame.mixer.music.play(-1)
+        except pygame.error:
+            print ("nincs ilyen zene")
+    return return_fnc
+        
+onkey(K_1)(play_music(0))
+onkey(K_2)(play_music(1))
+onkey(K_3)(play_music(2))
     
 @onkey(K_TAB)
 def enemy_menu():
