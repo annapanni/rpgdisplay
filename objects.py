@@ -30,7 +30,7 @@ class Sprite():
 
 class Character (Sprite):
     moving=True
-    def __init__(self, nev="Unknown", direction=0, speed=30, maxhp=20, hp=20, stats=None, **args):
+    def __init__(self, nev="Unknown", direction=0, speed=30, maxhp=20, hp=20, stats=None, ac=10, **args):
         self.nev=nev
         self.direction=direction
         self.speed=speed
@@ -38,6 +38,7 @@ class Character (Sprite):
         self.egyseg_x, self.egyseg_y, self.mozog=0,0,0
         self.maxhp=maxhp
         self.hp=hp
+        self.ac=ac
         if stats is None:
             self.stats={"STR":10,
                         "DEX":10,

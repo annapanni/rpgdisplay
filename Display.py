@@ -392,6 +392,8 @@ while 1:
                         screen.blit(text, [mx+120, my+30*(key+1)+50])
                     text=font_small.render(("Hp: "+ str(selected.hp)), True, black)
                     screen.blit(text, [mx+220, my+80])
+                    text=font_small.render(("AC: "+ str(selected.ac)), True, black)
+                    screen.blit(text, [mx+220, my+110])
                     
                 pygame.display.flip()
                 clock.tick(30)
