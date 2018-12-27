@@ -13,11 +13,14 @@ class Sprite():
         self.kep=kep
         a=pygame.image.load(kep).convert_alpha()
         self.surface = pygame.transform.scale(a, (s,s))
+        self.menusurface=pygame.transform.scale(a, (50,50))
         self.x, self.y= pos
     def rajzolas(self, surf, offset=(0,0)):
         w,h=self.surface.get_size()
         ox,oy=offset
         surf.blit(self.surface, [self.x-w/2-ox,self.y-h/2-oy])
+    def menurajzolas(self, surf, pos=(0,0)):
+        surf.blit(self.surface, pos)
     def copy(self):
         return copy(self)
     def state(self):
