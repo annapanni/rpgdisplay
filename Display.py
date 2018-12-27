@@ -364,7 +364,7 @@ while 1:
         ##            Movebase-counter
                 if global_state["DM_mode"]==False:
                     smx,smy=pygame.mouse.get_pos()
-                    mx,my=smx-window.x,smy-window.y
+                    mx,my=smx+window.x,smy+window.y
                     side1=abs(onturn.x-mx)
                     side2=abs(onturn.y-my)
                     distance=sqrt(side1**2+side2**2)
@@ -377,7 +377,7 @@ while 1:
                 selector.rajzolas(screen,(window.x, window.y))
 ##                Stats kiiro négyzet (form)
                 mx,my=pygame.mouse.get_pos()
-                selected=select(sprites, mx,my)
+                selected=select(sprites, mx+window.x,my+window.y)
                 if selected is not None:
                     screen.blit(form, [mx,my])
                     text = font.render((selected.nev), True, black)
